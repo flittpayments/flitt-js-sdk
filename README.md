@@ -21,7 +21,7 @@ or add dependency manually:
 ```json
 {
   "dependency": {
-    "flitt-js-sdk":"^1.1"
+    "flitt-js-sdk":"^1.2"
   }
 }
 ```

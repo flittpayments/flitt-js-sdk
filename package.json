@@ -3,7 +3,7 @@
   "description": "Flitt JavaScript SDK",
   "homepage": "https://github.com/flittpayments/flitt-js-sdk",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/cjs/checkout.js",
   "module": "dist/esm/checkout.js",
   "browser": "dist/umd/checkout.js",

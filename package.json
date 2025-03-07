@@ -14,6 +14,12 @@
   "files": [
     "dist"
   ],
+  "exports" : {
+    ".": {
+      "import": "./dist/esm/checkout.js",
+      "require": "./dist/cjs/checkout.js"
+    }
+  },
   "scripts": {
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest --collect-coverage",
     "jest": "node --experimental-vm-modules ./node_modules/.bin/jest --watch --collect-coverage",

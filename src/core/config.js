@@ -1,11 +1,11 @@
 export const ApiOrigin = 'https://pay.flitt.com'
 
 export const ApiEndpoint = {
-  gateway: '/latest/checkout/v2/index.html',
-  element: '/latest/checkout/v2/button/element.html',
+  gateway: '/latest/checkout-v2/index.html',
+  element: '/latest/checkout-v2/button/element.html',
 }
 
-export const ProxyUrl = 'http://secure-redirect.flitt.com/submit/'
+export const ProxyUrl = 'http://secure-redirect.cloudipsp.com/submit/'
 
 export const GooglePayApi = 'https://pay.google.com/gp/p/js/pay.js'
 

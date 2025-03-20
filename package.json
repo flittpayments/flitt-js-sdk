@@ -1,9 +1,9 @@
 {
-  "name": "flittpayments/js-sdk",
+  "name": "@flittpayments/js-sdk",
   "description": "Flitt JavaScript SDK",
-  "homepage": "https://github.com/flittpayments/flitt-js-sdk",
+  "homepage": "https://github.com/flittpayments/js-sdk",
   "type": "module",
-  "version": "1.2.3",
+  "version": "1.0.0",
   "main": "dist/cjs/checkout.js",
   "module": "dist/esm/checkout.js",
   "unpkg": "dist/umd/checkout.js",

@@ -6,6 +6,7 @@
   "version": "1.2.2",
   "main": "dist/cjs/checkout.js",
   "module": "dist/esm/checkout.js",
+  "unpkg": "dist/umd/checkout.js",
   "browser": "dist/umd/checkout.js",
   "author": {
     "name": "Flitt JavaScript Team",

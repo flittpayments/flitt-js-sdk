@@ -1,5 +1,5 @@
 {
-  "name": "flitt-js-sdk",
+  "name": "flittpayments/js-sdk",
   "description": "Flitt JavaScript SDK",
   "homepage": "https://github.com/flittpayments/flitt-js-sdk",
   "type": "module",

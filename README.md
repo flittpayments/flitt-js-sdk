@@ -9,11 +9,11 @@
 
 ### Node
 
-If you’re using [Npm](https://npmjs.com/) in your project, you can add `flitt-js-sdk` dependency to `package.json`
+If you’re using [Npm](https://npmjs.com/) in your project, you can add `@flittpayments/js-sdk` dependency to `package.json`
 with following command:
 
 ```cmd
-npm i --save flitt-js-sdk
+npm i --save @flittpayments/js-sdk
 ```
 
 or add dependency manually:
@@ -21,7 +21,7 @@ or add dependency manually:
 ```json
 {
   "dependency": {
-    "flitt-js-sdk":"^1.2"
+    "@flittpayments/js-sdk":"^1.2"
   }
 }
 ```
@@ -31,14 +31,14 @@ If you do not use NPM, you can download the
 [latest release](https://github.com/flittpayments/flitt-js-sdk/releases).
 Or clone from GitHub the latest developer version
 ```cmd
-git clone git@github.com:flittpayments/flitt-js-sdk.git
+git clone git@github.com:flittpayments/js-sdk.git
 ```
 
 
 ## Quick start
 
 ```html
-<script src="https://unpkg.com/flitt-js-sdk"></script>
+<script src="https://unpkg.com/@flittpayments/js-sdk"></script>
 ```
 
 ## Basic template
@@ -51,7 +51,7 @@ git clone git@github.com:flittpayments/flitt-js-sdk.git
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   </head>
   <body>
-    <script src="https://unpkg.com/flitt-js-sdk"></script>
+    <script src="https://unpkg.com/@flittpayments/js-sdk"></script>
     <script>
     $checkout('Api').scope(function(){
         this.request('api.checkout.form','request', { Parameters } ).done(function(model){
@@ -76,7 +76,7 @@ git clone git@github.com:flittpayments/flitt-js-sdk.git
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   </head>
   <body>
-    <script src="https://unpkg.com/flitt-js-sdk"></script>
+    <script src="https://unpkg.com/@flittpayments/js-sdk"></script>
     <div class="payment-button-container"></div>
     <script>
     $checkout.get('PaymentButton', {

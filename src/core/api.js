@@ -108,7 +108,7 @@ export const Api = Module.extend({
       checkout: this,
       model: model,
     })
-    this.modal.on('close', this.proxy('_onCloseModal'))
+    this.modal.on('close', this.proxy('onCloseModal'))
   },
   onCloseModal(modal, data) {
     this.trigger('modal.close', modal, data)

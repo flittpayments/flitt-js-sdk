@@ -179,17 +179,16 @@ export const PaymentRequestApi = PaymentRequestInterface.extend({
     return this
   },
   before() {
-    if (this.beforeDeferred) {
-      return this.beforeDeferred
-    }
-    this.beforeDeferred = Deferred()
-    this.beforeDeferred.always(
+    if (this.isPending()) return
+    this.setPending(true)
+    const defer = Deferred()
+    defer.always(
       this.proxy(function () {
-        this.beforeDeferred = null
+        this.setPending(false)
       })
     )
-    this.beforeCallback(this.beforeDeferred)
-    return this.beforeDeferred
+    this.beforeCallback(defer)
+    return defer
   },
   pay(method) {
     if (this.isPending()) return

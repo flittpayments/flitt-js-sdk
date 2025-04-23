@@ -1,9 +1,9 @@
 ![Flitt](https://flitt.com/wp-content/uploads/2024/09/Group.svg)
 # Flitt JavaScript SDK
 
-[![NPM Version](https://img.shields.io/npm/v/flitt-js-sdk.svg)](https://www.npmjs.com/package/flitt-js-sdk)
-[![Downloads](https://img.shields.io/npm/dt/flitt-js-sdk.svg)](https://www.npmjs.com/package/flitt-js-sdk)
-[![Licence](https://img.shields.io/github/license/flittpayments/flitt-js-sdk.svg)](https://github.com/flittpayments/flitt-js-sdk)
+[![NPM Version](https://img.shields.io/npm/v/@flittpayments/js-sdk.svg)](https://www.npmjs.com/package/@flittpayments/js-sdk)
+[![Downloads](https://img.shields.io/npm/dt/@flittpayments/js-sdk.svg)](https://www.npmjs.com/package/@flittpayments/js-sdk)
+[![Licence](https://img.shields.io/github/license/flittpayments/js-sdk.svg)](https://github.com/flittpayments/flitt-js-sdk)
 
 ## Installation
 

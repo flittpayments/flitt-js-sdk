@@ -41,11 +41,19 @@ export const Api = Module.extend({
   },
   scope(callback) {
     callback = this.proxy(callback)
-    if (this.createFrame().loaded === true) {
-      callback()
-    } else {
-      this.on('checkout.api', callback)
-    }
+    this.domReady(function () {
+      if (this.createFrame().loaded === true) {
+        callback()
+      } else {
+        this.on('checkout.api', callback)
+      }
+    })
+  },
+  domReady(callback) {
+    callback = this.proxy(callback)
+    document.readyState !== 'loading'
+      ? callback()
+      : window.addEventListener('DOMContentLoaded', callback)
   },
   request(model, method, params) {
     const defer = Deferred()
@@ -74,12 +82,7 @@ export const Api = Module.extend({
     )
     return defer
   },
-  domLoaded(callback) {
-    callback = this.proxy(callback)
-    document.readyState !== 'loading'
-      ? callback()
-      : window.addEventListener('DOMContentLoaded', callback)
-  },
+
   loadFrame(url) {
     this.iframe = this.utils.createElement('iframe')
     this.addAttr(this.iframe, {
@@ -89,14 +92,16 @@ export const Api = Module.extend({
     })
     this.addAttr(this.iframe, { src: url })
     this.addCss(this.iframe, ApiFrameCss)
-    this.domLoaded(function () {
-      this.container = this.utils.querySelector(this.params.container)
+    this.container = this.utils.querySelector(this.params.container)
+    if (this.container) {
       if (this.container.firstChild) {
         this.container.insertBefore(this.iframe, this.container.firstChild)
       } else {
         this.container.appendChild(this.iframe)
       }
-    })
+    } else {
+      throw Error(`container element not found: querySelector("${this.params.container}")`)
+    }
     return this.iframe
   },
   createFrame() {

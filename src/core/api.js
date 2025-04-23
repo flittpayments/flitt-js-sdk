@@ -9,6 +9,7 @@ export const Api = Module.extend({
   defaults: {
     origin: ApiOrigin,
     endpoint: ApiEndpoint,
+    container: 'body',
     messages: {
       modalHeader:
         'Now you will be redirected to your bank 3DSecure. If you are not redirected please refer',
@@ -73,6 +74,12 @@ export const Api = Module.extend({
     )
     return defer
   },
+  domLoaded(callback) {
+    callback = this.proxy(callback)
+    document.readyState !== 'loading'
+      ? callback()
+      : window.addEventListener('DOMContentLoaded', callback)
+  },
   loadFrame(url) {
     this.iframe = this.utils.createElement('iframe')
     this.addAttr(this.iframe, {
@@ -82,12 +89,14 @@ export const Api = Module.extend({
     })
     this.addAttr(this.iframe, { src: url })
     this.addCss(this.iframe, ApiFrameCss)
-    this.body = this.utils.querySelector('body')
-    if (this.body.firstChild) {
-      this.body.insertBefore(this.iframe, this.body.firstChild)
-    } else {
-      this.body.appendChild(this.iframe)
-    }
+    this.domLoaded(function () {
+      this.container = this.utils.querySelector(this.params.container)
+      if (this.container.firstChild) {
+        this.container.insertBefore(this.iframe, this.container.firstChild)
+      } else {
+        this.container.appendChild(this.iframe)
+      }
+    })
     return this.iframe
   },
   createFrame() {

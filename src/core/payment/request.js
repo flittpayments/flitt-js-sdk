@@ -100,28 +100,6 @@ export const PaymentRequestApi = Module.extend({
       })
     }
   },
-  authorize(data) {
-    const context = this
-    const defer = Deferred()
-    this.after(this.params.data).done(function (extendParams) {
-      const params = context.utils.extend({}, context.params.data, extendParams || {}, {
-        payment_system: context.payload.payment_system,
-        data,
-      })
-      context.request(
-        'api.checkout.form',
-        'request',
-        params,
-        function (data) {
-          defer.resolve(data)
-        },
-        function (data) {
-          defer.reject(data)
-        }
-      )
-    })
-    return defer
-  },
   session(params) {
     const defer = Deferred()
     this.request(

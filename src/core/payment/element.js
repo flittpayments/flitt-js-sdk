@@ -25,6 +25,11 @@ export const PaymentElement = Module.extend({
     height: 38,
   },
   init(params) {
+    this.state = {
+      isSupported: false,
+      isAllowed: false,
+      isMounted: false,
+    }
     this.params = {}
     this.utils.extend(this.params, this.defaults)
     this.utils.extend(this.params, params)
@@ -88,14 +93,12 @@ export const PaymentElement = Module.extend({
   },
   onClickFail() {},
   onSupported(cx, supported) {
-    if (supported.provider.includes(this.params.method)) {
-      this.mount()
-    }
+    this.state.isSupported = supported.provider.includes(this.params.method)
+    this.render()
   },
   onPayload(cx, payload) {
-    if (payload.allowed.includes(this.params.method)) {
-      this.show()
-    }
+    this.state.isAllowed = payload.allowed.includes(this.params.method)
+    this.render()
   },
   onPending(cx, state) {
     this.pending = state
@@ -130,36 +133,56 @@ export const PaymentElement = Module.extend({
     this.initEvents()
     return this
   },
-  mount() {
-    this.appendTo(this.params.appendTo)
+  render() {
+    if (this.state.isSupported === false) return this
+    if (this.state.isAllowed === false) return this
+    this.mount()
+    this.show()
   },
-  isMounted() {
-    return document.body.contains(this.element)
+  unmount() {
+    if (this.element.parentNode) {
+      this.element.parentNode.removeChild(this.element)
+    }
+    return this
+  },
+  mount() {
+    if (document.body.contains(this.element) === false) {
+      this.appendTo(this.params.appendTo)
+    }
+    return this
+  },
+  timeout(callback, timeout) {
+    this.timeoutMap = this.timeoutMap || {}
+    clearTimeout(this.timeoutMap[timeout])
+    this.timeoutMap[callback] = setTimeout(callback, timeout)
+    return this
   },
   show() {
-    if (this.isMounted() === false) return this
-    this.addCss(this.iframe, {
-      transition: 'opacity 0.6s 0.4s ease-out',
-      opacity: this.utils.cssUnit(1),
-    })
-    this.addCss(this.element, {
-      transition: 'height 0.2s ease-out',
-      height: this.utils.cssUnit(this.params.height, 'px'),
-    })
-    this.trigger('show', {})
+    this.timeout(() => {
+      this.addCss(this.iframe, {
+        transition: 'opacity 0.6s 0.4s ease-out',
+        opacity: this.utils.cssUnit(1),
+      })
+      this.addCss(this.element, {
+        transition: 'height 0.2s ease-out',
+        height: this.utils.cssUnit(this.params.height, 'px'),
+      })
+      this.trigger('show', {})
+    }, 25)
     return this
   },
   hide() {
-    if (this.isMounted() === false) return this
-    this.addCss(this.iframe, {
-      transition: 'opacity 0.4s ease-out',
-      opacity: this.utils.cssUnit(0),
-    })
-    this.addCss(this.element, {
-      transition: 'height 0.2s 0.4s ease-out',
-      height: this.utils.cssUnit(0, 'px'),
-    })
-    this.trigger('hide', {})
+    this.timeout(() => {
+      this.addCss(this.iframe, {
+        transition: 'opacity 0.4s ease-out',
+        opacity: this.utils.cssUnit(0),
+      })
+      this.addCss(this.element, {
+        transition: 'height 0.2s 0.4s ease-out',
+        height: this.utils.cssUnit(0, 'px'),
+      })
+      this.trigger('hide', {})
+    }, 25)
     return this
   },
 })

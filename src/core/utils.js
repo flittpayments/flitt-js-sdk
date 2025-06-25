@@ -311,3 +311,137 @@ export const jsonParse = (value, defaults) => {
     return defaults
   }
 }
+
+export const PromiseWithResolvers = () => {
+  let resolve
+  let reject
+  const promise = new Promise((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
+/**
+ * @typedef PaymentRequestMethod
+ * @property {{[string]:any}} data
+ */
+
+/**
+ * @typedef PaymentRequestOptions
+ * @property {boolean} [requestPayerEmail]
+ * @property {boolean} [requestPayerPhone]
+ * @property {boolean} [requestPayerName]
+ * @property {boolean} [requestShipping]
+ */
+
+/**
+ * @typedef PaymentRequestConfig
+ * @property [PaymentRequestMethod] methods
+ * @property {{[string]:any}} options
+ */
+
+/**
+ * @param {PaymentRequestConfig} config
+ */
+export const getAppleSessionConfig = (config) => {
+  const { methods, details, options } = config
+  const method = methods.find((item) => item.supportedMethods === 'https://apple.com/apple-pay')
+  const requiredShippingContactFields = []
+  const requiredBillingContactFields = []
+  if (options.requestShipping) requiredBillingContactFields.push('postalAddress')
+  if (options.requestPayerName) requiredShippingContactFields.push('name')
+  if (options.requestPayerEmail) requiredShippingContactFields.push('email')
+  if (options.requestPayerPhone) requiredShippingContactFields.push('phone')
+
+  method.data.recurringPaymentRequest = recurringPaymentRequest
+  // method.data.deferredPaymentRequest = deferredPaymentRequest
+
+  console.log(config)
+
+  return {
+    version: method.data.version,
+    countryCode: method.data.countryCode,
+    supportedNetworks: method.data.supportedNetworks,
+    merchantCapabilities: method.data.merchantCapabilities,
+    merchantIdentifier: method.data.merchantIdentifier,
+    lineItems: method.data.lineItems || details.displayItems,
+    additionalLineItems: [
+      {
+        label: 'Surcharge',
+        amount: '5.00',
+      },
+    ],
+    recurringPaymentRequest: method.data.recurringPaymentRequest,
+    deferredPaymentRequest: method.data.deferredPaymentRequest,
+    //
+    currencyCode: method.data.currencyCode || details.total.amount.currency,
+    total: {
+      label: details.total.label,
+      amount: details.total.amount.value,
+    },
+    //
+    requiredBillingContactFields,
+    requiredShippingContactFields,
+  }
+}
+
+export const deferredPaymentRequest = {
+  paymentDescription: 'Бронювання готельного номеру',
+  deferredBilling: {
+    label: 'Бронювання',
+    amount: '50.00',
+    type: 'final',
+    paymentTiming: 'deferred',
+    deferredPaymentDate: new Date('2026-01-05'),
+  },
+  managementURL: 'https://flitt.ksv.app/manage-booking.html',
+}
+
+export const recurringPaymentRequest = {
+  paymentDescription: 'Місячна підписка',
+  regularBilling: {
+    label: 'Підписка на місяць',
+    amount: '20.00',
+    type: 'final',
+    paymentTiming: 'recurring',
+    recurringPaymentStartDate: new Date('2026-01-01T00:00:00'),
+    //recurringPaymentIntervalUnit: 'month',
+    //recurringPaymentIntervalCount: 6,
+    recurringPaymentEndDate: new Date('2028-01-01T00:00:00'),
+  },
+  managementURL: 'https://flitt.ksv.app/manage-subscription.html',
+}
+
+export const getFunction = (path) => {
+  const props = path.split('.')
+  const value = props.reduce((acc, cur) => {
+    if (acc && acc.hasOwnProperty(cur)) {
+      acc = acc[cur]
+      return acc
+    }
+    return null
+  }, window)
+  return isFunction(value) ? value : value
+}
+
+export const loadExternalApi = (url, path) => {
+  const [existScript] = toArray(document.scripts).filter((script) => script.src === url)
+  if (existScript) return Promise.resolve(getFunction(path))
+  const { promise, resolve } = PromiseWithResolvers()
+  const script = document.createElement('script')
+  script.type = 'text/javascript'
+  script.src = url
+  script.addEventListener('load', () => {
+    const value = getFunction(path)
+    log('api loading', 'success', url)
+    resolve(value)
+  })
+  script.addEventListener('error', () => {
+    const value = getFunction(path)
+    log('api loading', 'error', url)
+    resolve(value)
+  })
+  document.head.appendChild(script)
+  return promise
+}

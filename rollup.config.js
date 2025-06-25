@@ -39,12 +39,20 @@ export default [
   },
   {
     input: 'src/browser.js',
-    output: {
-      file: 'dist/umd/checkout.js',
-      format: 'umd',
-      sourcemap: true,
-      name: '$checkout',
-    },
+    output: [
+      {
+        file: 'dist/umd/checkout.js',
+        format: 'umd',
+        sourcemap: true,
+        name: '$checkout',
+      },
+      {
+        file: 'public/checkout.js',
+        format: 'umd',
+        sourcemap: true,
+        name: '$checkout',
+      },
+    ],
     plugins: [
       commonjs(),
       resolve({}),

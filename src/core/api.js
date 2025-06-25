@@ -17,6 +17,7 @@ export const Api = Module.extend({
     },
   },
   init(params) {
+    this.iframeDeferred = Deferred()
     this.initParams(params)
   },
   url(type, url) {
@@ -30,8 +31,6 @@ export const Api = Module.extend({
     this.params = this.utils.extend({}, this.defaults)
     this.extendParams(params)
     this.setOrigin(this.params.origin)
-    this.loaded = false
-    this.created = false
   },
   setOrigin(origin) {
     if (this.utils.isString(origin)) {
@@ -42,18 +41,21 @@ export const Api = Module.extend({
   scope(callback) {
     callback = this.proxy(callback)
     this.domReady(function () {
-      if (this.createFrame().loaded === true) {
-        callback()
+      this.createFrame()
+      if (this.iframeDeferred.isPending()) {
+        this.iframeDeferred.done(callback)
       } else {
-        this.on('checkout.api', callback)
+        callback()
       }
     })
   },
   domReady(callback) {
     callback = this.proxy(callback)
-    document.readyState !== 'loading'
-      ? callback()
-      : window.addEventListener('DOMContentLoaded', callback)
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', callback)
+    } else {
+      callback()
+    }
   },
   request(model, method, params) {
     const defer = Deferred()
@@ -82,55 +84,48 @@ export const Api = Module.extend({
     )
     return defer
   },
-
-  loadFrame(url) {
+  createFrame() {
+    if (this.iframe) return this
     this.iframe = this.utils.createElement('iframe')
     this.addAttr(this.iframe, {
       allowtransparency: true,
       frameborder: 0,
       scrolling: 'no',
     })
-    this.addAttr(this.iframe, { src: url })
+    this.addAttr(this.iframe, { src: this.url('gateway') })
     this.addCss(this.iframe, ApiFrameCss)
-    this.container = this.utils.querySelector(this.params.container)
+    if (this.utils.isElement(this.params.container)) {
+      this.container = this.params.container
+    }
+    if (this.utils.isString(this.params.container)) {
+      this.container = this.utils.querySelector(this.params.container)
+    }
     if (this.container) {
       if (this.container.firstChild) {
         this.container.insertBefore(this.iframe, this.container.firstChild)
       } else {
         this.container.appendChild(this.iframe)
       }
-    } else {
-      throw Error(`container element not found: querySelector("${this.params.container}")`)
-    }
-    return this.iframe
-  },
-  createFrame() {
-    if (this.created === false) {
-      this.created = true
-      this.iframe = this.loadFrame(this.url('gateway'))
       this.connector = new Connector({
         target: this.iframe.contentWindow,
         origin: this.params.origin,
       })
       this.connector.on('load', this.proxy('onLoadConnector'))
       this.connector.on('modal', this.proxy('onOpenModal'))
+    } else {
+      throw Error(`container element not found: document.querySelector("${this.params.container}")`)
     }
     return this
   },
   onOpenModal(xhr, model) {
-    this.modal = new Modal({
-      checkout: this,
-      model: model,
-    })
+    this.modal = new Modal({ checkout: this, model: model })
     this.modal.on('close', this.proxy('onCloseModal'))
   },
   onCloseModal(modal, data) {
     this.trigger('modal.close', modal, data)
   },
   onLoadConnector() {
-    this.loaded = true
+    this.iframeDeferred.resolve(true)
     this.connector.off('load')
-    this.trigger('checkout.api')
-    this.off('checkout.api')
   },
 })

@@ -1,76 +1,36 @@
 import { Module } from '../module.js'
 import { Api } from '../api.js'
-import { GooglePay } from '../google/pay.js'
 import { Deferred } from '../deferred.js'
-import { getPaymentRequest, hasProp, isFunction } from '../utils.js'
-import { GoogleBaseRequest, PaymentRequestDetails } from '../config.js'
+import { forEach, getAppleSessionConfig, isFunction, loadExternalApi } from '../utils.js'
+import { PaymentMethodsConfig } from '../config.js'
 
-const getPaymentMethods = () => {
-  return [
-    [
-      'google',
-      {
-        supportedMethods: 'https://google.com/pay',
-        data: GoogleBaseRequest,
-      },
-    ],
-    [
-      'apple',
-      {
-        supportedMethods: 'https://apple.com/apple-pay',
-      },
-      () => hasProp(window, 'ApplePaySession'),
-    ],
-  ]
-}
-
-let requestDeferred = null
-
-let requestSupported = {
-  fallback: false,
-  provider: [],
-}
+let supportedMethodsDeferred = null
 
 const getSupportedMethods = () => {
-  if (requestDeferred) return requestDeferred
-  requestDeferred = Deferred()
-  const methods = getPaymentMethods()
-  const details = PaymentRequestDetails
-  ;(function check() {
-    const item = methods.shift()
-    if (item === undefined) {
-      if (requestSupported.provider.indexOf('google') === -1) {
-        requestSupported.fallback = true
-        requestSupported.provider.push('google')
-      }
-      return requestDeferred.resolve(requestSupported)
-    }
-    const method = item.shift()
-    const config = item.shift()
-    const callback = item.shift()
-    if (isFunction(callback) && callback() === false) {
-      setTimeout(check, 25)
-      return false
-    }
-    const request = getPaymentRequest([config], details, {})
-    if (request) {
-      request
-        .canMakePayment()
-        .then(function (status) {
-          if (status === true) requestSupported.provider.push(method)
-          setTimeout(check, 25)
+  if (supportedMethodsDeferred) return supportedMethodsDeferred
+  supportedMethodsDeferred = Deferred()
+  const promises = []
+  const supported = { provider: [] }
+  forEach(PaymentMethodsConfig, (method) => {
+    promises.push(
+      loadExternalApi(method.url, method.path)
+        .then(method.callback)
+        .then((state) => {
+          if (state) {
+            supported.provider.push(method.name)
+          } else {
+            log('error loading api', google)
+          }
         })
-        .catch(function () {
-          setTimeout(check, 25)
-        })
-    } else {
-      setTimeout(check, 25)
-    }
-  })()
-  return requestDeferred
+    )
+  })
+  Promise.all(promises).then(() => {
+    supportedMethodsDeferred.resolve(supported)
+  })
+  return supportedMethodsDeferred
 }
 
-const PaymentRequestInterface = Module.extend({
+export const PaymentRequestApi = Module.extend({
   config: {
     payment_system: '',
     fallback: false,
@@ -109,6 +69,16 @@ const PaymentRequestInterface = Module.extend({
   setMerchant(merchant) {
     this.merchant = merchant
   },
+  setBeforeCallback(beforeCallback) {
+    if (isFunction(beforeCallback)) {
+      this.params.before = beforeCallback
+    }
+  },
+  setAfterCallback(afterCallback) {
+    if (isFunction(afterCallback)) {
+      this.params.after = afterCallback
+    }
+  },
   setApi(api) {
     if (api instanceof Api) this.api = api
     return this
@@ -122,42 +92,73 @@ const PaymentRequestInterface = Module.extend({
   isFallbackMethod(method) {
     return method === 'google' && this.supported.fallback
   },
-})
-
-export const PaymentRequestApi = PaymentRequestInterface.extend({
-  request(method, params, success, failure) {
-    if (this.api) {
-      this.api.scope(
-        this.proxy(function () {
-          this.api
-            .request('api.checkout.pay', method, params)
-            .done(this.proxy(success))
-            .fail(this.proxy(failure))
-        })
-      )
+  request(model, method, params, success, failure) {
+    const context = this
+    if (context.api) {
+      context.api.scope(function () {
+        context.api.request(model, method, params).done(success).fail(failure)
+      })
     }
   },
-  update(data) {
+  authorize(data) {
+    const context = this
+    const defer = Deferred()
+    this.after(this.params.data).done(function (extendParams) {
+      const params = context.utils.extend({}, context.params.data, extendParams || {}, {
+        payment_system: context.payload.payment_system,
+        data,
+      })
+      context.request(
+        'api.checkout.form',
+        'request',
+        params,
+        function (data) {
+          defer.resolve(data)
+        },
+        function (data) {
+          defer.reject(data)
+        }
+      )
+    })
+    return defer
+  },
+  session(params) {
     const defer = Deferred()
     this.request(
-      'methods',
-      data,
-      function (cx, model) {
-        this.onUpdate(cx, model)
-        defer.resolveWith(this, [model])
+      'api.checkout.pay',
+      'session',
+      params,
+      function (model) {
+        defer.resolve(model.serialize())
       },
-      function (cx, model) {
-        this.onError(cx, model)
-        defer.rejectWith(this, [model])
+      function (model) {
+        defer.reject(model)
       }
     )
     return defer
   },
-  onUpdate(cx, model) {
-    this.setPayload(model.serialize())
-  },
-  onError(cx, model) {
-    this.trigger('error', model)
+  update(data) {
+    if (this.isPending()) return
+    this.setPending(true)
+    const context = this
+    const defer = Deferred()
+    this.params.data = data
+    this.request(
+      'api.checkout.pay',
+      'methods',
+      this.params.data,
+      function (model) {
+        context.setPending(false)
+        context.setPayload(model.serialize())
+        defer.resolve(model)
+      },
+      function (model) {
+        context.setPending(false)
+        context.trigger('error', model)
+        defer.reject(model)
+      }
+    )
+    return defer
   },
   isPending() {
     return this.pendingState === true
@@ -165,127 +166,98 @@ export const PaymentRequestApi = PaymentRequestInterface.extend({
   setPending(state) {
     this.pendingState = state
     clearTimeout(this.pendingTimeoutEvent)
-    this.pendingTimeoutEvent = setTimeout(() => {
-      this.trigger('pending', state)
-    }, 100)
-  },
-  beforeCallback(defer) {
-    defer.resolve()
-  },
-  setBeforeCallback(callback) {
-    if (isFunction(callback)) {
-      this.beforeCallback = callback
-    }
-    return this
+    this.pendingTimeoutEvent = setTimeout(
+      function (context) {
+        context.trigger('pending', state)
+      },
+      100,
+      this
+    )
   },
   before() {
     if (this.isPending()) return
     this.setPending(true)
     const defer = Deferred()
-    defer.always(
-      this.proxy(function () {
-        this.setPending(false)
-      })
-    )
-    this.beforeCallback(defer)
+    const context = this
+    defer.always(function () {
+      context.setPending(false)
+    })
+    this.params.before(defer)
     return defer
+  },
+  after(params) {
+    const defer = Deferred()
+    this.params.after(defer, params)
+    return defer
+  },
+  withApplePay(response, config) {
+    const sessionConfig = getAppleSessionConfig(config)
+    const request = new ApplePaySession(sessionConfig.version, sessionConfig)
+    const merchant = this.merchant
+    const context = this
+    request.onvalidatemerchant = function (event) {
+      context
+        .session({
+          url: event.validationURL,
+          domain: location.host,
+          merchant_id: merchant,
+        })
+        .done((session) => {
+          try {
+            request.completeMerchantValidation(session.data)
+          } catch (error) {
+            response.reject({ code: error.code, message: error.message })
+          }
+        })
+    }
+    request.oncancel = function () {
+      response.reject({ code: 20, message: 'cancel' })
+    }
+    request.onpaymentauthorized = function (event) {
+      request.completePayment(ApplePaySession.STATUS_SUCCESS)
+      response.resolve(event.payment)
+    }
+    request.begin()
+  },
+  withGooglePay(response, config) {
+    const { methods } = config
+    const method = methods.find((item) => item.supportedMethods === 'https://google.com/pay')
+    const client = new google.payments.api.PaymentsClient({ environment: method.data.environment })
+    client
+      .loadPaymentData(method.data)
+      .then((paymentData) => {
+        response.resolve(paymentData)
+      })
+      .catch((error) => {
+        response.reject({ code: error.code, message: error.message })
+      })
   },
   pay(method) {
     if (this.isPending()) return
     this.setPending(true)
-    const payload = this.getProviderPayload(method)
+    const context = this
     const response = Deferred()
+    const payload = this.getProviderPayload(method)
     response.always(function () {
-      this.setPending(false)
+      context.setPending(false)
     })
-    if (this.isMethodSupported(method) === false) {
-      return response.rejectWith(this, [{ test: true }])
-    }
-    if (this.isFallbackMethod(method)) {
-      this.makePaymentFallback(response, payload.methods)
-    } else {
-      this.makeNativePayment(response, payload)
+    switch (method) {
+      case 'google':
+        this.withGooglePay(response, payload)
+        break
+      case 'apple':
+        this.withApplePay(response, payload)
+        break
     }
     return response
-      .done(function (details) {
-        this.trigger('details', {
-          payment_system: this.payload.payment_system,
-          data: details,
+      .done(function (data) {
+        context.trigger('details', {
+          payment_system: context.payload.payment_system,
+          data,
         })
       })
       .fail(function (error) {
-        this.trigger('error', error)
-        if (this.params.embedded === true) {
-          location.reload()
-          this.trigger('reload', this.params)
-        }
-      })
-  },
-  makeNativePayment(defer, payload) {
-    const self = this
-    const request = getPaymentRequest(payload.methods, payload.details, payload.options)
-    this.addEvent(request, 'merchantvalidation', 'merchantValidation')
-    request
-      .canMakePayment()
-      .then(function () {
-        request
-          .show()
-          .then(function (response) {
-            response.complete('success').then(function () {
-              defer.resolveWith(self, [response.details])
-            })
-          })
-          .catch(function (e) {
-            defer.rejectWith(self, [{ code: e.code, message: e.message }])
-          })
-      })
-      .catch(function (e) {
-        defer.rejectWith(self, [{ code: e.code, message: e.message }])
-      })
-  },
-  makePaymentFallback(defer, methods) {
-    const self = this
-    GooglePay.load().then(() => {
-      GooglePay.show(methods)
-        .then((details) => {
-          defer.resolveWith(self, [details])
-        })
-        .catch((e) => {
-          defer.rejectWith(self, [{ code: e.code, message: e.message }])
-        })
-    })
-  },
-  appleSession(params) {
-    const defer = Deferred()
-    this.request(
-      'session',
-      params,
-      function (c, model) {
-        defer.resolveWith(this, [model.serialize()])
-      },
-      function (c, model) {
-        defer.rejectWith(this, [model])
-      }
-    )
-    return defer
-  },
-  merchantValidation(cx, event) {
-    const { validationURL } = event
-    const { host } = location
-    this.appleSession({
-      url: validationURL,
-      domain: host,
-      merchant_id: this.merchant,
-    })
-      .done(function (session) {
-        try {
-          event.complete(session.data)
-        } catch (error) {
-          this.trigger('error', error)
-        }
-      })
-      .fail(function (error) {
-        this.trigger('error', error)
+        context.trigger('error', error)
       })
   },
 })

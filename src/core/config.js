@@ -23,6 +23,31 @@ export const GoogleBaseRequest = {
   ],
 }
 
+export const PaymentMethodsConfig = [
+  {
+    url: 'https://pay.google.com/gp/p/js/pay.js',
+    name: 'google',
+    path: 'google.payments.api.PaymentsClient',
+    callback(PaymentsClient) {
+      if (PaymentsClient) {
+        return new PaymentsClient({ environment: 'TEST' }).isReadyToPay(GoogleBaseRequest)
+      }
+      return false
+    },
+  },
+  {
+    url: 'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js',
+    name: 'apple',
+    path: 'ApplePaySession',
+    callback(ApplePaySession) {
+      if (ApplePaySession) {
+        return ApplePaySession.supportsVersion(3)
+      }
+      return false
+    },
+  },
+]
+
 export const GooglePayLanguages = [
   'ar',
   'bg',

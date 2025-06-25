@@ -51,28 +51,31 @@ export function Deferred() {
   const promise = {
     done(callback) {
       if (isFunction(callback)) {
-        if (status === RESOLVED) {
+        if (this.isResolved()) {
           callback.apply(resultContext, resultArgs)
+        } else {
+          resolveCallbacks.push(callback)
         }
-        resolveCallbacks.push(callback)
       }
       return this
     },
     fail(callback) {
       if (isFunction(callback)) {
-        if (status === REJECTED) {
+        if (this.isRejected()) {
           callback.apply(resultContext, resultArgs)
+        } else {
+          rejectCallbacks.push(callback)
         }
-        rejectCallbacks.push(callback)
       }
       return this
     },
     progress(callback) {
       if (isFunction(callback)) {
-        if (status === PROGRESS) {
+        if (this.isProgress()) {
           callback.apply(resultContext, resultArgs)
+        } else {
+          notifyCallbacks.push(callback)
         }
-        notifyCallbacks.push(callback)
       }
       return this
     },
@@ -112,33 +115,31 @@ export function Deferred() {
     isResolved() {
       return status === RESOLVED
     },
-    resetState() {
-      status = PENDING
-      return this
+    isProgress() {
+      return status === PROGRESS
     },
     resolveWith(context, args) {
-      if (status === PENDING) {
+      if (this.isPending()) {
         status = RESOLVED
         executeCallback(context, args, resolveCallbacks)
       }
       return this
     },
     rejectWith(context, args) {
-      if (status === PENDING) {
+      if (this.isPending()) {
         status = REJECTED
         executeCallback(context, args, rejectCallbacks)
       }
       return this
     },
     notifyWith(context, args) {
-      if (status === PENDING) {
+      if (this.isPending()) {
         status = PROGRESS
         executeCallback(context, args, notifyCallbacks)
         status = PENDING
       }
       return this
     },
-
     resolve() {
       return this.resolveWith(this, Array.from(arguments))
     },

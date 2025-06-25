@@ -99,7 +99,11 @@ export const PaymentElement = Module.extend({
   },
   onPending(cx, state) {
     this.pending = state
-    this.send('pending', { state: state })
+    this.addCss(this.element, {
+      transition: 'height 0.2s ease-out, opacity 0.4s ease-out',
+      pointerEvents: this.pending ? 'none' : '',
+      opacity: this.pending ? '0.5' : '1',
+    })
   },
   initEvents() {
     this.addEvent(this.button, 'mouseenter', 'onEvent')

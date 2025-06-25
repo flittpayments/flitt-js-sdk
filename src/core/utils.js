@@ -434,12 +434,12 @@ export const loadExternalApi = (url, path) => {
   script.src = url
   script.addEventListener('load', () => {
     const value = getFunction(path)
-    log('api loading', 'success', url)
+    console.log('api loading', 'success', url)
     resolve(value)
   })
   script.addEventListener('error', () => {
     const value = getFunction(path)
-    log('api loading', 'error', url)
+    console.log('api loading', 'error', url)
     resolve(value)
   })
   document.head.appendChild(script)

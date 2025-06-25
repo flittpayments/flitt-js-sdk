@@ -19,7 +19,7 @@ const getSupportedMethods = () => {
           if (state) {
             supported.provider.push(method.name)
           } else {
-            log('error loading api', google)
+            console.log('error loading api', google)
           }
         })
     )

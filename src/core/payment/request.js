@@ -24,9 +24,14 @@ const getSupportedMethods = () => {
         })
     )
   })
-  Promise.all(promises).then(() => {
-    supportedMethodsDeferred.resolve(supported)
-  })
+  Promise.all(promises).then(
+    () => {
+      supportedMethodsDeferred.resolve(supported)
+    },
+    () => {
+      supportedMethodsDeferred.resolve(supported)
+    }
+  )
   return supportedMethodsDeferred
 }
 
@@ -148,7 +153,7 @@ export const PaymentRequestApi = Module.extend({
       function (context) {
         context.trigger('pending', state)
       },
-      100,
+      50,
       this
     )
   },

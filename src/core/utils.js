@@ -353,12 +353,8 @@ export const getAppleSessionConfig = (config) => {
   if (options.requestPayerName) requiredShippingContactFields.push('name')
   if (options.requestPayerEmail) requiredShippingContactFields.push('email')
   if (options.requestPayerPhone) requiredShippingContactFields.push('phone')
-
-  method.data.recurringPaymentRequest = recurringPaymentRequest
-  // method.data.deferredPaymentRequest = deferredPaymentRequest
-
-  console.log(config)
-
+  //method.data.recurringPaymentRequest = recurringPaymentRequest
+  //method.data.deferredPaymentRequest = deferredPaymentRequest
   return {
     version: method.data.version,
     countryCode: method.data.countryCode,
@@ -366,12 +362,7 @@ export const getAppleSessionConfig = (config) => {
     merchantCapabilities: method.data.merchantCapabilities,
     merchantIdentifier: method.data.merchantIdentifier,
     lineItems: method.data.lineItems || details.displayItems,
-    additionalLineItems: [
-      {
-        label: 'Surcharge',
-        amount: '5.00',
-      },
-    ],
+    additionalLineItems: method.data.additionalLineItems,
     recurringPaymentRequest: method.data.recurringPaymentRequest,
     deferredPaymentRequest: method.data.deferredPaymentRequest,
     //
@@ -386,32 +377,32 @@ export const getAppleSessionConfig = (config) => {
   }
 }
 
-export const deferredPaymentRequest = {
-  paymentDescription: 'Бронювання готельного номеру',
-  deferredBilling: {
-    label: 'Бронювання',
-    amount: '50.00',
-    type: 'final',
-    paymentTiming: 'deferred',
-    deferredPaymentDate: new Date('2026-01-05'),
-  },
-  managementURL: 'https://flitt.ksv.app/manage-booking.html',
-}
+// export const deferredPaymentRequest = {
+//   paymentDescription: 'Бронювання готельного номеру',
+//   deferredBilling: {
+//     label: 'Бронювання',
+//     amount: '50.00',
+//     type: 'final',
+//     paymentTiming: 'deferred',
+//     deferredPaymentDate: new Date('2026-01-05'),
+//   },
+//   managementURL: 'https://flitt.ksv.app/manage-booking.html',
+// }
 
-export const recurringPaymentRequest = {
-  paymentDescription: 'Місячна підписка',
-  regularBilling: {
-    label: 'Підписка на місяць',
-    amount: '20.00',
-    type: 'final',
-    paymentTiming: 'recurring',
-    recurringPaymentStartDate: new Date('2026-01-01T00:00:00'),
-    //recurringPaymentIntervalUnit: 'month',
-    //recurringPaymentIntervalCount: 6,
-    recurringPaymentEndDate: new Date('2028-01-01T00:00:00'),
-  },
-  managementURL: 'https://flitt.ksv.app/manage-subscription.html',
-}
+// export const recurringPaymentRequest = {
+//   paymentDescription: 'Місячна підписка',
+//   regularBilling: {
+//     label: 'Підписка на місяць',
+//     amount: '20.00',
+//     type: 'final',
+//     paymentTiming: 'recurring',
+//     recurringPaymentStartDate: new Date('2026-01-01T00:00:00'),
+//     recurringPaymentIntervalUnit: 'month',
+//     recurringPaymentIntervalCount: 6,
+//     recurringPaymentEndDate: new Date('2028-01-01T00:00:00'),
+//   },
+//   managementURL: 'https://flitt.ksv.app/manage-subscription.html',
+// }
 
 export const getFunction = (path) => {
   const props = path.split('.')
@@ -430,14 +421,14 @@ export const loadExternalApi = (url, path) => {
   if (existScript) return Promise.resolve(getFunction(path))
   const { promise, resolve } = PromiseWithResolvers()
   const script = document.createElement('script')
-  script.type = 'text/javascript'
+  script.async = true
   script.src = url
   script.addEventListener('load', () => {
     const value = getFunction(path)
     console.log('api loading', 'success', url)
     resolve(value)
   })
-  script.addEventListener('error', () => {
+  script.addEventListener('error', (e) => {
     const value = getFunction(path)
     console.log('api loading', 'error', url)
     resolve(value)

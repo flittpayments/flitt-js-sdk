@@ -30,7 +30,12 @@ export const PaymentMethodsConfig = [
     path: 'google.payments.api.PaymentsClient',
     callback(PaymentsClient) {
       if (PaymentsClient) {
-        return new PaymentsClient({ environment: 'TEST' }).isReadyToPay(GoogleBaseRequest)
+        return new PaymentsClient({ environment: 'TEST' })
+          .isReadyToPay(GoogleBaseRequest)
+          .catch((e) => {
+            console.log(e)
+            return false
+          })
       }
       return false
     },

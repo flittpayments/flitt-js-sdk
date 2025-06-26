@@ -35,6 +35,12 @@ export const PaymentElement = Module.extend({
     this.utils.extend(this.params, params)
     this.initElement()
   },
+  timeout(callback, timeout) {
+    this.timeoutMap = this.timeoutMap || {}
+    clearTimeout(this.timeoutMap[timeout])
+    this.timeoutMap[callback] = setTimeout(callback, timeout)
+    return this
+  },
   getElementUrl() {
     return [this.params.origin, this.params.endpoint].join('')
   },
@@ -94,7 +100,6 @@ export const PaymentElement = Module.extend({
   onClickFail() {},
   onSupported(cx, supported) {
     this.state.isSupported = supported.provider.includes(this.params.method)
-    this.render()
   },
   onPayload(cx, payload) {
     this.state.isAllowed = payload.allowed.includes(this.params.method)
@@ -149,12 +154,6 @@ export const PaymentElement = Module.extend({
     if (document.body.contains(this.element) === false) {
       this.appendTo(this.params.appendTo)
     }
-    return this
-  },
-  timeout(callback, timeout) {
-    this.timeoutMap = this.timeoutMap || {}
-    clearTimeout(this.timeoutMap[timeout])
-    this.timeoutMap[callback] = setTimeout(callback, timeout)
     return this
   },
   show() {

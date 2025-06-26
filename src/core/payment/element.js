@@ -100,6 +100,7 @@ export const PaymentElement = Module.extend({
   onClickFail() {},
   onSupported(cx, supported) {
     this.state.isSupported = supported.provider.includes(this.params.method)
+    this.render()
   },
   onPayload(cx, payload) {
     this.state.isAllowed = payload.allowed.includes(this.params.method)

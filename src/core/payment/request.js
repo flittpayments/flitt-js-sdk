@@ -19,19 +19,14 @@ const getSupportedMethods = () => {
           if (state) {
             supported.provider.push(method.name)
           } else {
-            console.log('error loading api', google)
+            console.log('payment method is not supported', method.name)
           }
         })
     )
   })
-  Promise.all(promises).then(
-    () => {
-      supportedMethodsDeferred.resolve(supported)
-    },
-    () => {
-      supportedMethodsDeferred.resolve(supported)
-    }
-  )
+  Promise.all(promises).finally(() => {
+    supportedMethodsDeferred.resolve(supported)
+  })
   return supportedMethodsDeferred
 }
 

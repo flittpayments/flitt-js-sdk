@@ -17,7 +17,6 @@ export const Api = Module.extend({
     },
   },
   init(params) {
-    this.iframeDeferred = Deferred()
     this.initParams(params)
   },
   url(type, url) {
@@ -28,6 +27,7 @@ export const Api = Module.extend({
     return this
   },
   initParams(params) {
+    this.iframeDeferred = Deferred()
     this.params = this.utils.extend({}, this.defaults)
     this.extendParams(params)
     this.setOrigin(this.params.origin)

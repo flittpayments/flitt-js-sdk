@@ -30,7 +30,12 @@ export const Modal = Module.extend({
     this.addEvent(this.find('.flitt-modal-close'), 'click', 'closeModal')
     this.addEvent(this.find('.flitt-modal-title a'), 'click', 'submitForm')
     this.initScrollbar()
-    this.body.appendChild(this.modal)
+    this.submitToIframe()
+  },
+  submitToIframe() {
+    if (this.modal) {
+      this.body.appendChild(this.modal)
+    }
     if (this.form) {
       this.form.submit()
     }
